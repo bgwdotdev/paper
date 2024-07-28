@@ -29,7 +29,8 @@ fn loop(state: state, ctx: Context, spec: Spec(state), engine: Engine) -> Nil {
     True -> {
       // update
       let engine = Engine(..engine, prev: curr, frames: engine.frames +. 1.0)
-      let state = spec.update(state)
+      let keys = get_keys() |> Input
+      let state = spec.update(state, keys)
       state |> spec.view() |> render(ctx)
       // debug
       case spec.debug {
@@ -71,7 +72,7 @@ pub type Spec(state) {
     // Things to render onto the canvas
     view: fn(state) -> Draws,
     // The core game logic update loop
-    update: fn(state) -> state,
+    update: fn(state, Input) -> state,
   )
 }
 
@@ -156,6 +157,10 @@ fn now() -> Float
 // INPUT
 //
 
+pub opaque type Input {
+  Input(keys: Keys)
+}
+
 @external(javascript, "./canvas.mjs", "init_keydown")
 fn init_keydown(func: fn(Event, Keys) -> Keys) -> Nil
 
@@ -163,7 +168,7 @@ fn init_keydown(func: fn(Event, Keys) -> Keys) -> Nil
 fn init_keyup(func: fn(Event, Keys) -> Keys) -> Nil
 
 @external(javascript, "./canvas.mjs", "get_keys")
-pub fn get_keys() -> Keys
+fn get_keys() -> Keys
 
 pub fn is_down_then(keys: Keys, key: String, true: a, false: a) -> a {
   case set.contains(keys, key) {
@@ -172,7 +177,8 @@ pub fn is_down_then(keys: Keys, key: String, true: a, false: a) -> a {
   }
 }
 
-pub fn is_down(keys: Keys, key: String) -> Bool {
+pub fn is_down(input: Input, key: String) -> Bool {
+  let Input(keys) = input
   set.contains(keys, key)
 }
 

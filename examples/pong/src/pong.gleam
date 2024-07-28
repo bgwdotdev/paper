@@ -1,5 +1,3 @@
-//// move2
-
 import gleam/bool
 import gleam/float
 import gleam/io
@@ -51,17 +49,15 @@ fn init() -> State {
   )
 }
 
-fn update(state: State) -> State {
-  let keys = paper.get_keys()
-
+fn update(state: State, input: paper.Input) -> State {
   // player movement
   let v = 0.0
   let v =
-    paper.is_down(keys, "w")
+    paper.is_down(input, "w")
     |> bool.and(state.player.y >. 0.0)
     |> bool.guard(float.negate(speed), fn() { v })
   let v =
-    paper.is_down(keys, "s")
+    paper.is_down(input, "s")
     |> bool.and({ state.player.y +. state.player.height } <. height)
     |> bool.guard(speed, fn() { v })
 
