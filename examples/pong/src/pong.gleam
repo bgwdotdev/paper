@@ -23,6 +23,8 @@ pub type State {
     ball: paper.Rect,
     ball_vel: Float,
     score: #(Int, Int),
+    ping: paper.Audio,
+    pong: paper.Audio,
   )
 }
 
@@ -37,6 +39,9 @@ fn init() -> State {
   let ball = paper.Rect(width /. 2.0, height /. 2.0, 2.0, 2.0)
   let score = #(0, 0)
 
+  let ping = paper.load_audio("ping.mp3")
+  let pong = paper.load_audio("pong.mp3")
+
   State(
     width,
     height,
@@ -46,6 +51,8 @@ fn init() -> State {
     ball,
     float.negate(speed),
     score,
+    ping,
+    pong,
   )
 }
 
@@ -66,10 +73,18 @@ fn update(state: State, input: paper.Input) -> State {
   let ball_vel = state.ball_vel
   let ball_vel =
     paper.collision_recs(state.player, ball)
-    |> bool.guard(float.negate(ball_vel), fn() { ball_vel })
+    |> bool.negate
+    |> bool.guard(ball_vel, fn() {
+      state.pong.play()
+      float.negate(ball_vel)
+    })
   let ball_vel =
     paper.collision_recs(state.enemy, ball)
-    |> bool.guard(float.negate(ball_vel), fn() { ball_vel })
+    |> bool.negate
+    |> bool.guard(ball_vel, fn() {
+      state.ping.play()
+      float.negate(ball_vel)
+    })
 
   let player = paper.Rect(..state.player, y: state.player.y +. v)
   let ball = paper.Rect(..state.ball, x: state.ball.x +. state.ball_vel)

@@ -46,6 +46,10 @@ pub opaque type Context {
   Context(canvas: Canvas)
 }
 
+//
+// ENGINE
+//
+
 type Engine {
   Engine(prev: Float, begin: Float, end: Float, frames: Float)
 }
@@ -225,7 +229,7 @@ fn img(
   image: Image,
 ) -> Drawable
 
-// TEXT 
+// TEXT
 
 pub fn draw_text(x: Float, y: Float, str: String) -> Draw {
   fn(ctx) { text(ctx, x, y, str) }
@@ -245,3 +249,10 @@ pub type Image
 
 @external(javascript, "./canvas.mjs", "image")
 pub fn load_image(src: String) -> Image
+
+pub type Audio {
+  Audio(play: fn() -> Nil)
+}
+
+@external(javascript, "./canvas.mjs", "audio")
+pub fn load_audio(src: String) -> Audio

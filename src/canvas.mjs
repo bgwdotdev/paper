@@ -99,3 +99,9 @@ export function image(src) {
   img.src = src;
   return img
 }
+
+export function audio(src) {
+  const aud = new Audio();
+  aud.src = src;
+  return aud
+}
