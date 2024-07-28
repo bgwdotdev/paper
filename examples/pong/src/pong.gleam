@@ -1,6 +1,8 @@
 import gleam/bool
 import gleam/float
+import gleam/int
 import gleam/io
+import gleam/pair
 import paper
 
 const width = 320.0
@@ -62,11 +64,11 @@ fn update(state: State, input: paper.Input) -> State {
   let v =
     paper.is_down(input, "w")
     |> bool.and(state.player.y >. 0.0)
-    |> bool.guard(float.negate(speed), fn() { v })
+    |> paper.guard(float.negate(speed), v)
   let v =
     paper.is_down(input, "s")
     |> bool.and({ state.player.y +. state.player.height } <. height)
-    |> bool.guard(speed, fn() { v })
+    |> paper.guard(speed, v)
 
   // ball movement
   let ball = paper.Rect(..state.ball, x: state.ball.x +. state.ball_vel)
@@ -76,24 +78,48 @@ fn update(state: State, input: paper.Input) -> State {
     |> bool.negate
     |> bool.guard(ball_vel, fn() {
       state.pong.play()
-      float.negate(ball_vel)
+      speed
     })
   let ball_vel =
     paper.collision_recs(state.enemy, ball)
     |> bool.negate
     |> bool.guard(ball_vel, fn() {
       state.ping.play()
-      float.negate(ball_vel)
+      float.negate(speed)
     })
+  let ball = paper.Rect(..state.ball, x: state.ball.x +. state.ball_vel)
+
+  // score
+  let ledge = 0.0
+  let redge = width -. state.ball.width
+  let #(score, ball, ball_vel) = case state.ball.x {
+    x if x <. ledge -> {
+      let score = state.score |> pair.map_second(fn(s) { s + 1 })
+      let ball =
+        paper.Rect(..state.ball, x: { width -. state.ball.width } /. 2.0)
+      let ball_vel = ball_vel /. 3.0
+      #(score, ball, ball_vel)
+    }
+    x if x >. redge -> {
+      let score = state.score |> pair.map_first(fn(s) { s + 1 })
+      let ball =
+        paper.Rect(..state.ball, x: { width -. state.ball.width } /. 2.0)
+      let ball_vel = ball_vel /. 3.0
+      #(score, ball, ball_vel)
+    }
+    _ -> #(state.score, ball, ball_vel)
+  }
 
   let player = paper.Rect(..state.player, y: state.player.y +. v)
-  let ball = paper.Rect(..state.ball, x: state.ball.x +. state.ball_vel)
-  State(..state, player: player, ball: ball, ball_vel: ball_vel)
+  State(..state, player: player, ball: ball, ball_vel: ball_vel, score: score)
 }
 
 fn view(state: State) -> paper.Draws {
+  let #(p, e) = state.score
   [
     paper.draw_rec(state.background, "#292d3e"),
+    paper.draw_text_center(width *. 0.25, 10.0, int.to_string(p), "#ffaff3"),
+    paper.draw_text_center(width *. 0.75, 10.0, int.to_string(e), "#ffaff3"),
     paper.draw_rec(state.player, "#ffaff3"),
     paper.draw_rec(state.enemy, "#ffaff3"),
     paper.draw_rec(state.ball, "#ffaff3"),
