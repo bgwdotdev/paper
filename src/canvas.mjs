@@ -20,6 +20,14 @@ export function init_canvas(id, w, h, s) {
   return [canvas, ctx]
 }
 
+export function create_canvas(w, h) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = w;
+  canvas.height = h;
+  return ctx
+}
+
 export function clear_canvas(ctx) {
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 }
@@ -105,3 +113,14 @@ export function audio(src) {
   aud.src = src;
   return aud
 }
+
+
+//
+// TILEMAP
+//
+
+export function img_pro(ctx, x, y, w, h, image, dx, dy, dw, dh) {
+  ctx.drawImage(image, x, y, w, h, dx, dy, dw, dh);
+}
+
+export function assert_drawable() {}

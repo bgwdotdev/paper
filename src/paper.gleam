@@ -1,4 +1,5 @@
 import gleam/float
+import gleam/int
 import gleam/io
 import gleam/list
 import gleam/set
@@ -127,6 +128,9 @@ fn init_resize(ctx: Context, cw: Float, ch: Float) -> fn(e) -> Nil {
 
 @external(javascript, "./canvas.mjs", "init_canvas")
 fn init_canvas(id: String, w: Float, h: Float, s: Float) -> #(Canvas, Context)
+
+@external(javascript, "./canvas.mjs", "create_canvas")
+fn create_canvas(w: Float, h: Float) -> Context
 
 @external(javascript, "./canvas.mjs", "clear_canvas")
 fn clear_canvas(ctx: Context) -> Nil
@@ -262,7 +266,9 @@ pub fn measure_text(ctx: Context, str: String) -> Float
 // ASSETS
 //
 
-pub type Image
+pub type Image {
+  Image(width: Float, height: Float)
+}
 
 @external(javascript, "./canvas.mjs", "image")
 pub fn load_image(src: String) -> Image
@@ -273,3 +279,95 @@ pub type Audio {
 
 @external(javascript, "./canvas.mjs", "audio")
 pub fn load_audio(src: String) -> Audio
+
+//
+// TILEMAP
+//
+
+// maybe change this to Int?
+pub opaque type TileMap {
+  TileMap(
+    src: String,
+    //ctx: Context,
+    ctx: Image,
+    tile_width: Float,
+    tile_height: Float,
+    width: Float,
+    height: Float,
+  )
+}
+
+pub fn load_tilemap(
+  src: String,
+  width: Float,
+  height: Float,
+  tw: Float,
+  th: Float,
+) -> TileMap {
+  //let ctx = create_canvas(width, height)
+  //let draw = todo as "img load src"
+  let image = load_image(src)
+  TileMap(src, image, width, height, tw, th)
+}
+
+pub fn draw_map(map: TileMap, layout: List(Float)) -> Draw {
+  fn(ctx: Context) {
+    let rl = map.ctx.width /. map.tile_width
+    let drl = 320.0 /. map.tile_width
+
+    layout
+    |> list.index_map(fn(l, i) {
+      // source
+      let y = l /. rl |> float.floor |> float.multiply(map.tile_width)
+      let x =
+        case l {
+          x if x >. rl -> float.round(l) % float.round(rl)
+          x -> float.round(x)
+        }
+        |> int.to_float
+        |> float.multiply(map.tile_width)
+
+      // destination
+      let dy =
+        int.to_float(i) /. drl |> float.floor |> float.multiply(map.tile_height)
+      let dx =
+        case int.to_float(i) {
+          x if x >=. drl -> float.round(x) % float.round(drl)
+          x -> float.round(x)
+        }
+        |> int.to_float
+        |> float.multiply(map.tile_width)
+
+      img_pro(
+        ctx,
+        x,
+        y,
+        map.tile_width,
+        map.tile_height,
+        map.ctx,
+        dx,
+        dy,
+        map.tile_width,
+        map.tile_height,
+      )
+    })
+    assert_drawable()
+  }
+}
+
+@external(javascript, "./canvas.mjs", "img_pro")
+fn img_pro(
+  ctx: Context,
+  x: Float,
+  y: Float,
+  w: Float,
+  h: Float,
+  image: Image,
+  dx: Float,
+  dy: Float,
+  dw: Float,
+  dh: Float,
+) -> Drawable
+
+@external(javascript, "./canvas.mjs", "assert_drawable")
+fn assert_drawable() -> Drawable
