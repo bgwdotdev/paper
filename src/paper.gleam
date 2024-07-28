@@ -4,59 +4,6 @@ import gleam/list
 import gleam/set
 import gleam/string
 
-pub fn start(spec: Spec(state)) -> Nil {
-  let #(vw, vh) = window_size() |> io.debug
-  let w = vw /. spec.width |> float.floor
-  let h = vh /. spec.height |> float.floor
-  let scale = float.min(w, h)
-  let #(_canvas, ctx) = init_canvas(spec.id, spec.width, spec.height, scale)
-  scale_canvas(ctx, scale, scale)
-
-  init_resize(ctx, spec.width, spec.height) |> window_resize
-  init_keys()
-  let state = spec.init()
-  let engine = init()
-  draw_canvas(fn() { loop(state, ctx, spec, engine) })
-}
-
-fn loop(state: state, ctx: Context, spec: Spec(state), engine: Engine) -> Nil {
-  // ENGINE
-  let curr = now()
-  let dt = curr -. engine.prev
-
-  // APP
-  case dt >=. 16.0 {
-    True -> {
-      // update
-      let engine = Engine(..engine, prev: curr, frames: engine.frames +. 1.0)
-      let keys = get_keys() |> Input
-      let state = spec.update(state, keys)
-      state |> spec.view() |> render(ctx)
-      // debug
-      case spec.debug {
-        True -> {
-          // frame timing
-          string.inspect({ now() -. engine.begin } /. engine.frames)
-          |> text(ctx, 10.0, 10.0, _)
-          Nil
-        }
-        False -> Nil
-      }
-      // loop
-      fn() { loop(state, ctx, spec, engine) } |> draw_canvas
-    }
-    False -> loop(state, ctx, spec, engine)
-  }
-}
-
-fn init() -> Engine {
-  Engine(prev: now(), begin: now(), end: now(), frames: 0.0)
-}
-
-type Engine {
-  Engine(prev: Float, begin: Float, end: Float, frames: Float)
-}
-
 pub type Spec(state) {
   Spec(
     // The id of the canvas element to render to
@@ -76,31 +23,67 @@ pub type Spec(state) {
   )
 }
 
-pub type Draws =
-  List(Draw)
+pub fn start(spec: Spec(state)) -> Nil {
+  let #(vw, vh) = window_size() |> io.debug
+  let w = vw /. spec.width |> float.floor
+  let h = vh /. spec.height |> float.floor
+  let scale = float.min(w, h)
+  let #(_canvas, ctx) = init_canvas(spec.id, spec.width, spec.height, scale)
+  scale_canvas(ctx, scale, scale)
 
-fn render(r: Draws, ctx: Context) -> Nil {
-  clear_canvas(ctx)
-  r |> list.each(fn(d) { d(ctx) })
+  init_resize(ctx, spec.width, spec.height) |> window_resize
+  init_keys()
+  let state = spec.init()
+  let engine = init()
+  draw_canvas(fn() { loop(state, ctx, spec, engine) })
 }
 
-pub type Canvas {
+pub opaque type Canvas {
   Canvas(width: Float, height: Float)
 }
 
-pub type Context {
+pub opaque type Context {
   Context(canvas: Canvas)
 }
 
-pub type Rec {
-  Rec(x: Float, y: Float, width: Float, height: Float)
+type Engine {
+  Engine(prev: Float, begin: Float, end: Float, frames: Float)
+}
+
+fn init() -> Engine {
+  Engine(prev: now(), begin: now(), end: now(), frames: 0.0)
+}
+
+fn loop(state: state, ctx: Context, spec: Spec(state), engine: Engine) -> Nil {
+  let curr = now()
+  let dt = curr -. engine.prev
+  case dt >=. 16.0 {
+    False -> loop(state, ctx, spec, engine)
+    True -> {
+      // update
+      let engine = Engine(..engine, prev: curr, frames: engine.frames +. 1.0)
+      let keys = get_keys() |> Input
+      let state = spec.update(state, keys)
+      state |> spec.view() |> render(ctx)
+      // debug
+      case spec.debug {
+        True -> {
+          // frame timing
+          string.inspect({ now() -. engine.begin } /. engine.frames)
+          |> text(ctx, 10.0, 10.0, _)
+          Nil
+        }
+        False -> Nil
+      }
+      // loop
+      fn() { loop(state, ctx, spec, engine) } |> draw_canvas
+    }
+  }
 }
 
 pub type Rect {
   Rect(x: Float, y: Float, width: Float, height: Float)
 }
-
-pub type RectImg
 
 pub fn collision_recs(rec1: Rect, rec2: Rect) -> Bool {
   rec1.x <. rec2.x +. rec2.width
@@ -170,13 +153,6 @@ fn init_keyup(func: fn(Event, Keys) -> Keys) -> Nil
 @external(javascript, "./canvas.mjs", "get_keys")
 fn get_keys() -> Keys
 
-pub fn is_down_then(keys: Keys, key: String, true: a, false: a) -> a {
-  case set.contains(keys, key) {
-    True -> true
-    False -> false
-  }
-}
-
 pub fn is_down(input: Input, key: String) -> Bool {
   let Input(keys) = input
   set.contains(keys, key)
@@ -208,10 +184,18 @@ fn key_set(set: Bool) -> fn(Event, Keys) -> Keys {
 // DRAW METHODS
 //
 
-pub type Drawable
+pub type Draws =
+  List(Draw)
 
 pub type Draw =
   fn(Context) -> Drawable
+
+pub type Drawable
+
+fn render(r: Draws, ctx: Context) -> Nil {
+  clear_canvas(ctx)
+  r |> list.each(fn(d) { d(ctx) })
+}
 
 pub fn draw_rec(rect: Rect, color: String) -> Draw {
   fn(ctx) { rec(ctx, rect.x, rect.y, rect.width, rect.height, color) }
