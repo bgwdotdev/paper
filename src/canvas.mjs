@@ -90,12 +90,13 @@ export function img(ctx, x, y, w, h, image) {
   ctx.drawImage(image, x, y, w, h);
 }
 
-export function text(ctx, x, y, text) {
+export function text(ctx, x, y, text, color) {
+  ctx.fillStyle = color;
   ctx.fillText(text, x, y);
 }
 
 export function measure_text(ctx, text) {
-  return ctx.measureText(text);
+  return ctx.measureText(text).width;
 }
 
 //

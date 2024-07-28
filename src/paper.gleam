@@ -82,7 +82,7 @@ fn loop(state: state, ctx: Context, spec: Spec(state), engine: Engine) -> Nil {
         True -> {
           // frame timing
           string.inspect({ now() -. engine.begin } /. engine.frames)
-          |> text(ctx, 10.0, 10.0, _)
+          |> text(ctx, 10.0, 10.0, _, "red")
           Nil
         }
         False -> Nil
@@ -97,6 +97,7 @@ pub type Rect {
   Rect(x: Float, y: Float, width: Float, height: Float)
 }
 
+// checks if two rectangles overlap
 pub fn collision_recs(rec1: Rect, rec2: Rect) -> Bool {
   rec1.x <. rec2.x +. rec2.width
   && rec1.x +. rec1.width >. rec2.x
@@ -144,12 +145,25 @@ fn resize_canvas(ctx: Context, w: Float, h: Float) -> Nil
 @external(javascript, "./canvas.mjs", "scale_canvas")
 fn scale_canvas(ctx: Context, x: Float, y: Float) -> Drawable
 
+/// scale/zoom any draw calls made after this
 pub fn scale(x: Float, y: Float) -> Draw {
   fn(ctx) { scale_canvas(ctx, x, y) }
 }
 
 @external(javascript, "./canvas.mjs", "now")
 fn now() -> Float
+
+//
+// HELPERS
+//
+
+/// bool.guard but without the callback
+pub fn guard(cond: Bool, then: a, or: a) -> a {
+  case cond {
+    True -> then
+    False -> or
+  }
+}
 
 //
 // INPUT
@@ -252,15 +266,30 @@ fn img(
 
 // TEXT
 
-pub fn draw_text(x: Float, y: Float, str: String) -> Draw {
-  fn(ctx) { text(ctx, x, y, str) }
+/// put text on the screen
+pub fn draw_text(x: Float, y: Float, str: String, color: String) -> Draw {
+  fn(ctx) { text(ctx, x, y, str, color) }
+}
+
+/// put text on the screen and center it relative to its own width
+pub fn draw_text_center(x: Float, y: Float, str: String, color: String) -> Draw {
+  fn(ctx) {
+    let x = x -. measure_text(ctx, str) /. 2.0
+    text(ctx, x, y, str, color)
+  }
 }
 
 @external(javascript, "./canvas.mjs", "text")
-fn text(ctx: Context, x: Float, y: Float, str: String) -> Drawable
+fn text(
+  ctx: Context,
+  x: Float,
+  y: Float,
+  str: String,
+  color: String,
+) -> Drawable
 
 @external(javascript, "./canvas.mjs", "measure_text")
-pub fn measure_text(ctx: Context, str: String) -> Float
+fn measure_text(ctx: Context, str: String) -> Float
 
 //
 // ASSETS
