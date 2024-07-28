@@ -51,11 +51,17 @@ pub opaque type Context {
 //
 
 type Engine {
-  Engine(prev: Float, begin: Float, end: Float, frames: Float)
+  Engine(prev: Float, begin: Float, end: Float, frames: Float, input: Input)
 }
 
 fn init() -> Engine {
-  Engine(prev: now(), begin: now(), end: now(), frames: 0.0)
+  Engine(
+    prev: now(),
+    begin: now(),
+    end: now(),
+    frames: 0.0,
+    input: Input(set.new(), set.new()),
+  )
 }
 
 fn loop(state: state, ctx: Context, spec: Spec(state), engine: Engine) -> Nil {
@@ -65,9 +71,10 @@ fn loop(state: state, ctx: Context, spec: Spec(state), engine: Engine) -> Nil {
     False -> loop(state, ctx, spec, engine)
     True -> {
       // update
-      let engine = Engine(..engine, prev: curr, frames: engine.frames +. 1.0)
-      let keys = get_keys() |> Input
-      let state = spec.update(state, keys)
+      let input = Input(keys: get_keys(), prev: engine.input.keys)
+      let engine =
+        Engine(..engine, prev: curr, frames: engine.frames +. 1.0, input: input)
+      let state = spec.update(state, input)
       state |> spec.view() |> render(ctx)
       // debug
       case spec.debug {
@@ -145,7 +152,7 @@ fn now() -> Float
 //
 
 pub opaque type Input {
-  Input(keys: Keys)
+  Input(keys: Keys, prev: Keys)
 }
 
 @external(javascript, "./canvas.mjs", "init_keydown")
@@ -157,9 +164,19 @@ fn init_keyup(func: fn(Event, Keys) -> Keys) -> Nil
 @external(javascript, "./canvas.mjs", "get_keys")
 fn get_keys() -> Keys
 
+/// Check if a key is being pressed
 pub fn is_down(input: Input, key: String) -> Bool {
-  let Input(keys) = input
+  let Input(keys, ..) = input
   set.contains(keys, key)
+}
+
+/// Check if a key has been pressed once
+pub fn is_pressed(input: Input, key: String) -> Bool {
+  let Input(keys, prev) = input
+  case set.contains(prev, key), set.contains(keys, key) {
+    False, True -> True
+    _, _ -> False
+  }
 }
 
 type Event {
