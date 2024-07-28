@@ -165,6 +165,17 @@ fn init_keyup(func: fn(Event, Keys) -> Keys) -> Nil
 @external(javascript, "./canvas.mjs", "get_keys")
 pub fn get_keys() -> Keys
 
+pub fn is_down_then(keys: Keys, key: String, true: a, false: a) -> a {
+  case set.contains(keys, key) {
+    True -> true
+    False -> false
+  }
+}
+
+pub fn is_down(keys: Keys, key: String) -> Bool {
+  set.contains(keys, key)
+}
+
 type Event {
   Event(key: String)
 }

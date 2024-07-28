@@ -51,6 +51,11 @@ export function init_keydown(fn, thinga) {
   window.addEventListener('keydown', function(e) { 
     keys = fn(e, keys);
   });
+
+  // clear inputs on loss of focus
+  window.addEventListener('blur', function() {
+    keys = $set.new$();
+  });
 }
 
 export function init_keyup(fn, thinga) {
