@@ -1,61 +1,18 @@
+//// move2
+
+import gleam/bool
+import gleam/float
 import gleam/io
-import gleam/set
 import paper
 
 const width = 320.0
 
 const height = 180.0
 
+const speed = 2.0
+
 pub fn main() {
-  io.println("Hello from pong!")
-
   paper.Spec("canvas", width, height, False, init, view, update) |> paper.start
-}
-
-fn init() -> State {
-  let background = paper.Rect(0.0, 0.0, width, height)
-  let player = paper.Rect(0.0, 50.0, 20.0, 20.0)
-  let enemy = paper.Rect(200.0, 50.0, 20.0, 20.0)
-  let pic = paper.load_image("./teal.png")
-  State(width, height, background, player, enemy, pic)
-}
-
-fn update(state: State) -> State {
-  let keys = paper.get_keys()
-  let paper.Rect(px, py, pw, ph) = state.player
-  let paper.Rect(ex, ey, ew, eh) = state.enemy
-  let collide =
-    paper.collision_recs(paper.Rect(px, py, pw, ph), paper.Rect(ex, ey, ew, eh))
-  // move
-  let vel = case set.contains(keys, "w") {
-    True -> 1.0
-    False -> 0.0
-  }
-  let px = case px {
-    x if x >. width -> 0.0
-    x if collide -> x +. 0.0
-    x -> x +. vel
-  }
-  // move2
-  let vel = case set.contains(keys, "s") {
-    True -> -1.0
-    False -> 0.0
-  }
-  let px = case px {
-    x if x >. width -> 0.0
-    x if collide -> x +. 0.0
-    x -> x +. vel
-  }
-  let player = paper.Rect(px, py, pw, ph)
-  State(..state, player: player)
-}
-
-fn view(state: State) -> paper.Draws {
-  [
-    paper.draw_rec(state.background, "#292d3e"),
-    paper.draw_img(state.player, state.pic),
-    paper.draw_rec(state.enemy, "#ffaff3"),
-  ]
 }
 
 pub type State {
@@ -65,6 +22,69 @@ pub type State {
     background: paper.Rect,
     player: paper.Rect,
     enemy: paper.Rect,
-    pic: paper.Image,
+    ball: paper.Rect,
+    ball_vel: Float,
+    score: #(Int, Int),
   )
+}
+
+fn init() -> State {
+  let paddle_width = 2.5
+  let paddle_height = 40.0
+  let background = paper.Rect(0.0, 0.0, width, height)
+
+  let player = paper.Rect(5.0, 20.0, paddle_width, paddle_height)
+  let enemy =
+    paper.Rect(width -. paddle_width -. 5.0, 70.0, paddle_width, paddle_height)
+  let ball = paper.Rect(width /. 2.0, height /. 2.0, 2.0, 2.0)
+  let score = #(0, 0)
+
+  State(
+    width,
+    height,
+    background,
+    player,
+    enemy,
+    ball,
+    float.negate(speed),
+    score,
+  )
+}
+
+fn update(state: State) -> State {
+  let keys = paper.get_keys()
+
+  // player movement
+  let v = 0.0
+  let v =
+    paper.is_down(keys, "w")
+    |> bool.and(state.player.y >. 0.0)
+    |> bool.guard(float.negate(speed), fn() { v })
+  let v =
+    paper.is_down(keys, "s")
+    |> bool.and({ state.player.y +. state.player.height } <. height)
+    |> bool.guard(speed, fn() { v })
+
+  // ball movement
+  let ball = paper.Rect(..state.ball, x: state.ball.x +. state.ball_vel)
+  let ball_vel = state.ball_vel
+  let ball_vel =
+    paper.collision_recs(state.player, ball)
+    |> bool.guard(float.negate(ball_vel), fn() { ball_vel })
+  let ball_vel =
+    paper.collision_recs(state.enemy, ball)
+    |> bool.guard(float.negate(ball_vel), fn() { ball_vel })
+
+  let player = paper.Rect(..state.player, y: state.player.y +. v)
+  let ball = paper.Rect(..state.ball, x: state.ball.x +. state.ball_vel)
+  State(..state, player: player, ball: ball, ball_vel: ball_vel)
+}
+
+fn view(state: State) -> paper.Draws {
+  [
+    paper.draw_rec(state.background, "#292d3e"),
+    paper.draw_rec(state.player, "#ffaff3"),
+    paper.draw_rec(state.enemy, "#ffaff3"),
+    paper.draw_rec(state.ball, "#ffaff3"),
+  ]
 }
