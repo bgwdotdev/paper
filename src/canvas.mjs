@@ -1,4 +1,5 @@
 import * as $set from "../gleam_stdlib/gleam/set.mjs";
+import * as $list from "../gleam_stdlib/gleam/list.mjs";
 
 //
 // CORE
@@ -56,7 +57,7 @@ export function now() {
 let keys = $set.new$();
 
 export function init_keydown(fn, thinga) {
-  window.addEventListener('keydown', function(e) { 
+  window.addEventListener('keydown', function(e) {
     keys = fn(e, keys);
   });
 
@@ -67,7 +68,7 @@ export function init_keydown(fn, thinga) {
 }
 
 export function init_keyup(fn, thinga) {
-  window.addEventListener('keyup', function(e) { 
+  window.addEventListener('keyup', function(e) {
     keys = fn(e, keys);
   });
 }
@@ -79,7 +80,7 @@ export function get_keys() {
 
 //
 // DRAW METHODS
-// 
+//
 
 export function rec(ctx, x, y, w, h, c) {
   ctx.fillStyle = c;
@@ -103,14 +104,37 @@ export function measure_text(ctx, text) {
 // ASSETS
 //
 
+let loading = 0;
+let failed = $list.new$();
+
+export function asset_status() {
+  return loading;
+}
+
+export function asset_failed() {
+  return failed;
+}
+
 export function image(src) {
+  loading++;
   const img = new Image();
+  img.onload = () => { loading--; };
+  img.onerror = () => {
+    failed = $list.prepend(failed, src);
+    loading = -1;
+  };
   img.src = src;
   return img
 }
 
 export function audio(src) {
+  loading++;
   const aud = new Audio();
+  aud.addEventListener("canplaythrough", () => { loading--; });
+  aud.addEventListener("error", () => {
+    failed = $list.prepend(failed, src);
+    loading = -1;
+  });
   aud.src = src;
   return aud
 }

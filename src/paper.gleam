@@ -47,12 +47,26 @@ pub opaque type Context {
   Context(canvas: Canvas)
 }
 
+// manages the game asset first loading state
+type Status {
+  Loading
+  Loaded
+  Failed(List(String))
+}
+
 //
 // ENGINE
 //
 
 type Engine {
-  Engine(prev: Float, begin: Float, end: Float, frames: Float, input: Input)
+  Engine(
+    prev: Float,
+    begin: Float,
+    end: Float,
+    frames: Float,
+    input: Input,
+    asset: Status,
+  )
 }
 
 fn init() -> Engine {
@@ -62,15 +76,37 @@ fn init() -> Engine {
     end: now(),
     frames: 0.0,
     input: Input(set.new(), set.new()),
+    asset: Loading,
   )
 }
 
 fn loop(state: state, ctx: Context, spec: Spec(state), engine: Engine) -> Nil {
   let curr = now()
   let dt = curr -. engine.prev
-  case dt >=. 16.0 {
-    False -> loop(state, ctx, spec, engine)
-    True -> {
+
+  let engine = status(engine)
+
+  case dt >=. 16.0, engine.asset {
+    False, _ -> loop(state, ctx, spec, engine)
+    True, Loading -> {
+      // spinner
+      clear_canvas(ctx)
+      let x = curr |> float.round()
+      x / 500 % 4
+      |> string.repeat(".", _)
+      |> string.append("loading", _)
+      |> text(ctx, 10.0, 10.0, _, "white")
+      fn() { loop(state, ctx, spec, engine) } |> draw_canvas
+    }
+    True, Failed(errors) -> {
+      // error
+      clear_canvas(ctx)
+      ["failed to load: \n", ..errors]
+      |> string.join("\n")
+      |> text(ctx, 10.0, 10.0, _, "white")
+      fn() { loop(state, ctx, spec, engine) } |> draw_canvas
+    }
+    True, Loaded -> {
       // update
       let input = Input(keys: get_keys(), prev: engine.input.keys)
       let engine =
@@ -90,6 +126,21 @@ fn loop(state: state, ctx: Context, spec: Spec(state), engine: Engine) -> Nil {
       // loop
       fn() { loop(state, ctx, spec, engine) } |> draw_canvas
     }
+  }
+}
+
+fn status(engine: Engine) {
+  io.debug(asset_status())
+  case engine.asset {
+    Loading -> {
+      case asset_status() {
+        0 -> Engine(..engine, asset: Loaded)
+        x if x < 0 -> Engine(..engine, asset: asset_failed() |> Failed)
+        _ -> engine
+      }
+    }
+    Loaded -> engine
+    Failed(errors) -> todo as "draw error?"
   }
 }
 
@@ -294,6 +345,12 @@ fn measure_text(ctx: Context, str: String) -> Float
 //
 // ASSETS
 //
+
+@external(javascript, "./canvas.mjs", "asset_status")
+fn asset_status() -> Int
+
+@external(javascript, "./canvas.mjs", "asset_failed")
+fn asset_failed() -> List(String)
 
 pub type Image {
   Image(width: Float, height: Float)
