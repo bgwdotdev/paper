@@ -374,8 +374,7 @@ pub fn load_audio(src: String) -> Audio
 pub opaque type TileMap {
   TileMap(
     src: String,
-    //ctx: Context,
-    ctx: Image,
+    image: Image,
     tile_width: Float,
     tile_height: Float,
     width: Float,
@@ -396,10 +395,10 @@ pub fn load_tilemap(
   TileMap(src, image, width, height, tw, th)
 }
 
-pub fn draw_map(map: TileMap, layout: List(Float)) -> Draw {
+pub fn draw_map(map: TileMap, game_width: Float, layout: List(Float)) -> Draw {
   fn(ctx: Context) {
-    let rl = map.ctx.width /. map.tile_width
-    let drl = 320.0 /. map.tile_width
+    let rl = map.image.width /. map.tile_width
+    let drl = game_width /. map.tile_width
 
     layout
     |> list.index_map(fn(l, i) {
@@ -430,7 +429,7 @@ pub fn draw_map(map: TileMap, layout: List(Float)) -> Draw {
         y,
         map.tile_width,
         map.tile_height,
-        map.ctx,
+        map.image,
         dx,
         dy,
         map.tile_width,
