@@ -1,7 +1,9 @@
+import gleam/dict
 import gleam/float
 import gleam/int
 import gleam/io
 import gleam/list
+import gleam/option.{type Option, None}
 import gleam/set
 import gleam/string
 
@@ -25,7 +27,7 @@ pub type Spec(state) {
 }
 
 pub fn start(spec: Spec(state)) -> Nil {
-  let #(vw, vh) = window_size() |> io.debug
+  let #(vw, vh) = window_size()
   let w = vw /. spec.width |> float.floor
   let h = vh /. spec.height |> float.floor
   let scale = float.min(w, h)
@@ -34,6 +36,7 @@ pub fn start(spec: Spec(state)) -> Nil {
 
   init_resize(ctx, spec.width, spec.height) |> window_resize
   init_keys()
+  init_mouse()
   let state = spec.init()
   let engine = init()
   draw_canvas(fn() { loop(state, ctx, spec, engine) })
@@ -75,7 +78,7 @@ fn init() -> Engine {
     begin: now(),
     end: now(),
     frames: 0.0,
-    input: Input(set.new(), set.new()),
+    input: Input(set.new(), set.new(), dict.new(), dict.new()),
     asset: Loading,
   )
 }
@@ -108,7 +111,14 @@ fn loop(state: state, ctx: Context, spec: Spec(state), engine: Engine) -> Nil {
     }
     True, Loaded -> {
       // update
-      let input = Input(keys: get_keys(), prev: engine.input.keys)
+      let scale = window_scale(spec.width, spec.height)
+      let input =
+        Input(
+          keys: get_keys(),
+          prev: engine.input.keys,
+          mouse: get_mouse_scale(scale),
+          mouse_prev: engine.input.mouse,
+        )
       let engine =
         Engine(..engine, prev: curr, frames: engine.frames +. 1.0, input: input)
       let state = spec.update(state, input)
@@ -124,13 +134,13 @@ fn loop(state: state, ctx: Context, spec: Spec(state), engine: Engine) -> Nil {
         False -> Nil
       }
       // loop
+      io.debug(get_mouse())
       fn() { loop(state, ctx, spec, engine) } |> draw_canvas
     }
   }
 }
 
 fn status(engine: Engine) {
-  io.debug(asset_status())
   case engine.asset {
     Loading -> {
       case asset_status() {
@@ -146,6 +156,10 @@ fn status(engine: Engine) {
 
 pub type Rect {
   Rect(x: Float, y: Float, width: Float, height: Float)
+}
+
+pub type Vec2 {
+  Vec2(x: Float, y: Float)
 }
 
 // checks if two rectangles overlap
@@ -168,14 +182,18 @@ fn window_resize(func: fn(e) -> Nil) -> Nil
 
 fn init_resize(ctx: Context, cw: Float, ch: Float) -> fn(e) -> Nil {
   fn(_) {
-    let #(vw, vh) = window_size()
-    let w = vw /. cw |> float.floor
-    let h = vh /. ch |> float.floor
-    let scale = float.min(w, h)
+    let scale = window_scale(cw, ch)
     resize_canvas(ctx, cw *. scale, ch *. scale)
     scale_canvas(ctx, scale, scale)
     Nil
   }
+}
+
+fn window_scale(cw: Float, ch: Float) -> Float {
+  let #(vw, vh) = window_size()
+  let w = vw /. cw |> float.floor
+  let h = vh /. ch |> float.floor
+  float.min(w, h)
 }
 
 @external(javascript, "./canvas.mjs", "init_canvas")
@@ -221,7 +239,7 @@ pub fn guard(cond: Bool, then: a, or: a) -> a {
 //
 
 pub opaque type Input {
-  Input(keys: Keys, prev: Keys)
+  Input(keys: Keys, prev: Keys, mouse: Mouse, mouse_prev: Mouse)
 }
 
 @external(javascript, "./canvas.mjs", "init_keydown")
@@ -233,15 +251,15 @@ fn init_keyup(func: fn(Event, Keys) -> Keys) -> Nil
 @external(javascript, "./canvas.mjs", "get_keys")
 fn get_keys() -> Keys
 
-/// Check if a key is being pressed
+/// check if a key is being held down
 pub fn is_down(input: Input, key: String) -> Bool {
   let Input(keys, ..) = input
   set.contains(keys, key)
 }
 
-/// Check if a key has been pressed once
+/// check if a key has been pressed once
 pub fn is_pressed(input: Input, key: String) -> Bool {
-  let Input(keys, prev) = input
+  let Input(keys, prev, ..) = input
   case set.contains(prev, key), set.contains(keys, key) {
     False, True -> True
     _, _ -> False
@@ -268,6 +286,86 @@ fn key_set(set: Bool) -> fn(Event, Keys) -> Keys {
     }
   }
   fn(event: Event, keys: Keys) { do(event.key, keys) }
+}
+
+// MOUSE
+
+type Mouse =
+  dict.Dict(String, Vec2)
+
+fn init_mouse() -> Nil {
+  init_mousemove(mouse_set_move())
+  mouse_set(True) |> init_mousedown
+  mouse_set(False) |> init_mouseup
+}
+
+@external(javascript, "./canvas.mjs", "init_mousemove")
+fn init_mousemove(func: fn(MouseEvent, Mouse) -> Mouse) -> Nil
+
+@external(javascript, "./canvas.mjs", "init_mousedown")
+fn init_mousedown(func: fn(MouseEvent, Mouse) -> Mouse) -> Nil
+
+@external(javascript, "./canvas.mjs", "init_mouseup")
+fn init_mouseup(func: fn(MouseEvent, Mouse) -> Mouse) -> Nil
+
+@external(javascript, "./canvas.mjs", "get_offset")
+fn get_offset(e: MouseEvent) -> Vec2
+
+@external(javascript, "./canvas.mjs", "get_mouse")
+fn get_mouse() -> Mouse
+
+fn get_mouse_scale(scale: Float) -> Mouse {
+  get_mouse()
+  |> dict.map_values(fn(_k, v) { Vec2(x: v.x /. scale, y: v.y /. scale) })
+}
+
+type MouseEvent {
+  MouseEvent(button: Int, x: Float, y: Float)
+}
+
+fn mouse_set(set: Bool) -> fn(MouseEvent, Mouse) -> Mouse {
+  let do = fn(k, v, ks) {
+    case set {
+      True -> dict.insert(ks, k, v)
+      False -> dict.delete(ks, k)
+    }
+  }
+  fn(event: MouseEvent, mouse: Mouse) {
+    let key = case event.button {
+      0 -> "LMB"
+      1 -> "MMB"
+      2 -> "RMB"
+      _ -> ""
+    }
+    let pos = get_offset(event)
+    let pos = Vec2(x: event.x -. pos.x, y: event.y -. pos.y)
+    do(key, pos, mouse)
+  }
+}
+
+fn mouse_set_move() -> fn(MouseEvent, Mouse) -> Mouse {
+  fn(event: MouseEvent, mouse: Mouse) {
+    let pos = get_offset(event)
+    let pos = Vec2(x: event.x -. pos.x, y: event.y -. pos.y)
+    dict.insert(mouse, "CURSOR", pos)
+  }
+}
+
+// check if a mouse button is held down
+pub fn is_held(input: Input, button: String) -> Option(Vec2) {
+  dict.get(input.mouse, button) |> option.from_result
+}
+
+// check if a mouse button has been clicked once
+pub fn is_clicked(input: Input, button: String) -> Option(Vec2) {
+  let pos = dict.get(input.mouse, button) |> option.from_result
+  case
+    dict.has_key(input.mouse_prev, button),
+    dict.has_key(input.mouse, button)
+  {
+    False, True -> pos
+    _, _ -> None
+  }
 }
 
 //

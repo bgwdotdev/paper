@@ -3,6 +3,7 @@ import gleam/float
 import gleam/int
 import gleam/io
 import gleam/list
+import gleam/option.{Some}
 import gleam/order
 import gleam/set
 import paper
@@ -22,32 +23,32 @@ pub fn main() {
 // STATE
 
 pub type State {
-  State(pause: Bool, cells: Cells)
+  State(pause: Bool, cells: Cells, tick: Int)
 }
 
 type Cells =
   set.Set(#(Int, Int))
 
 fn init() -> State {
-  let s =
-    set.new()
-    |> set.insert(#(3, 3))
-    |> set.insert(#(3, 4))
-    |> set.insert(#(2, 3))
-  let glider =
-    set.new()
-    |> set.insert(#(4, 1))
-    |> set.insert(#(4, 2))
-    |> set.insert(#(4, 3))
-    |> set.insert(#(3, 3))
-    |> set.insert(#(2, 2))
-  State(pause: False, cells: glider)
+  State(pause: False, cells: set.new(), tick: 0)
 }
 
 // UPDATE
 
 fn update(state: State, input: paper.Input) -> State {
+  let state = case paper.is_pressed(input, "p") {
+    True -> State(..state, pause: !state.pause)
+    False -> state
+  }
+  let click = paper.is_clicked(input, "LMB")
+  let state = case state.pause, click {
+    True, Some(v) -> toggle_cell(state, v)
+    _, _ -> state
+  }
   use <- bool.guard(state.pause, state)
+  let state = State(..state, tick: state.tick + 1)
+  let up = !{ state.tick % 10 == 0 }
+  use <- bool.guard(up, state)
   let cells = {
     let cells = set.new()
 
@@ -71,6 +72,18 @@ fn update(state: State, input: paper.Input) -> State {
       True -> set.insert(cells, #(x, y))
       False -> cells
     }
+  }
+  State(..state, cells: cells)
+}
+
+fn toggle_cell(state: State, pos: paper.Vec2) -> State {
+  let pos = #(
+    pos.x |> float.floor |> float.round,
+    pos.y |> float.floor |> float.round,
+  )
+  let cells = case set.contains(state.cells, pos) {
+    True -> set.delete(state.cells, pos)
+    False -> set.insert(state.cells, pos)
   }
   State(..state, cells: cells)
 }

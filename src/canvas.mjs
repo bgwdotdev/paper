@@ -1,4 +1,5 @@
 import * as $set from "../gleam_stdlib/gleam/set.mjs";
+import * as $dict from "../gleam_stdlib/gleam/dict.mjs";
 import * as $list from "../gleam_stdlib/gleam/list.mjs";
 
 //
@@ -54,6 +55,8 @@ export function now() {
 // INPUT
 //
 
+// KEYBOARD
+
 let keys = $set.new$();
 
 export function init_keydown(fn, thinga) {
@@ -77,6 +80,36 @@ export function get_keys() {
   return keys
 }
 
+// MOUSE
+
+let mouse = $dict.new$();
+
+export function init_mousemove(fn, scale) {
+  canvas.addEventListener('mousemove', (e) => {
+    mouse = fn(e, mouse);
+  });
+}
+
+export function init_mousedown(fn, scale) {
+  canvas.addEventListener('mousedown', (e) => {
+    mouse = fn(e, mouse);
+  });
+}
+
+export function init_mouseup(fn, scale) {
+  canvas.addEventListener('mouseup', (e) => {
+    mouse = fn(e, mouse);
+  });
+}
+
+// canvas position relative to the window
+export function get_offset(e) {
+  return { x: e.target.offsetLeft, y: e.target.offsetTop }
+}
+
+export function get_mouse() {
+  return mouse;
+}
 
 //
 // DRAW METHODS
