@@ -242,6 +242,8 @@ pub opaque type Input {
   Input(keys: Keys, prev: Keys, mouse: Mouse, mouse_prev: Mouse)
 }
 
+// KEYBOARD
+
 @external(javascript, "./canvas.mjs", "init_keydown")
 fn init_keydown(func: fn(Event, Keys) -> Keys) -> Nil
 
@@ -351,12 +353,12 @@ fn mouse_set_move() -> fn(MouseEvent, Mouse) -> Mouse {
   }
 }
 
-// check if a mouse button is held down
+/// check if a mouse button is held down
 pub fn is_held(input: Input, button: String) -> Option(Vec2) {
   dict.get(input.mouse, button) |> option.from_result
 }
 
-// check if a mouse button has been clicked once
+/// check if a mouse button has been clicked once
 pub fn is_clicked(input: Input, button: String) -> Option(Vec2) {
   let pos = dict.get(input.mouse, button) |> option.from_result
   case
@@ -385,6 +387,7 @@ fn render(r: Draws, ctx: Context) -> Nil {
   r |> list.each(fn(d) { d(ctx) })
 }
 
+/// draw a colored rectangle onto the canvas
 pub fn draw_rec(rect: Rect, color: String) -> Draw {
   fn(ctx) { rec(ctx, rect.x, rect.y, rect.width, rect.height, color) }
 }
@@ -399,6 +402,7 @@ fn rec(
   c: String,
 ) -> Drawable
 
+/// draw an image onto the canvas
 pub fn draw_img(rect: Rect, image: Image) -> Draw {
   fn(ctx) { img(ctx, rect.x, rect.y, rect.width, rect.height, image) }
 }
@@ -454,6 +458,7 @@ pub type Image {
   Image(width: Float, height: Float)
 }
 
+/// load an image file from a url
 @external(javascript, "./canvas.mjs", "image")
 pub fn load_image(src: String) -> Image
 
@@ -461,6 +466,7 @@ pub type Audio {
   Audio(play: fn() -> Nil)
 }
 
+/// load an audio file from a url
 @external(javascript, "./canvas.mjs", "audio")
 pub fn load_audio(src: String) -> Audio
 
@@ -470,29 +476,18 @@ pub fn load_audio(src: String) -> Audio
 
 // maybe change this to Int?
 pub opaque type TileMap {
-  TileMap(
-    src: String,
-    image: Image,
-    tile_width: Float,
-    tile_height: Float,
-    width: Float,
-    height: Float,
-  )
+  TileMap(src: String, image: Image, tile_width: Float, tile_height: Float)
 }
 
-pub fn load_tilemap(
-  src: String,
-  width: Float,
-  height: Float,
-  tw: Float,
-  th: Float,
-) -> TileMap {
-  //let ctx = create_canvas(width, height)
-  //let draw = todo as "img load src"
+/// load a tilemap image from a url
+/// provide the width and height for each sprite in px
+pub fn load_tilemap(src: String, tw: Float, th: Float) -> TileMap {
   let image = load_image(src)
-  TileMap(src, image, width, height, tw, th)
+  TileMap(src, image, tw, th)
 }
 
+/// draw a tilemap using a list of numbers which corrispond to the index of
+/// each tile
 pub fn draw_map(map: TileMap, game_width: Float, layout: List(Float)) -> Draw {
   fn(ctx: Context) {
     let rl = map.image.width /. map.tile_width
