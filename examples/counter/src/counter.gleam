@@ -1,12 +1,3 @@
-# paper
-
-[![Package Version](https://img.shields.io/hexpm/v/paper)](https://hex.pm/packages/paper)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/paper/)
-
-```sh
-gleam add paper@1
-```
-```gleam
 import gleam/int
 import paper
 
@@ -49,17 +40,3 @@ fn view(state: State) -> paper.Draws {
     ),
   ]
 }
-```
-
-You will need to create an index.html with a canvas element with the id
-specified in `paper.Spec`.
-
-See the `examples` directory for reference on index.html files (in `public/`)
-as well as building and bundling (in `Makefile`).
-
-## Development
-
-```sh
-gleam run   # Run the project
-gleam test  # Run the tests
-```
