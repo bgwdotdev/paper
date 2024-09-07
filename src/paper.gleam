@@ -622,8 +622,23 @@ pub type TileSet {
 fn tiled(src: String) -> dynamic.Dynamic
 
 /// loads a Tiled .json file from a url
+///
+/// note: the decoder code is quite heavy at around 8KB minified
 pub fn load_tiled(src: String) -> Result(Tiled, List(dynamic.DecodeError)) {
   src |> tiled |> decode_tiled
+}
+
+/// draw a tile map from a Tiled .json file
+///
+/// this uses the width properties in the .json file to caculate size
+/// ensure your canvas size matches
+pub fn draw_tiled(tilemap: TileMap, tiled: Tiled) -> Draws {
+  let w = tiled.width * tiled.tile_width |> int.to_float
+  list.map(tiled.layers, fn(layer) {
+    layer.data
+    |> list.map(int.to_float)
+    |> draw_map(tilemap, w, _)
+  })
 }
 
 fn decode_tiled(
