@@ -13,23 +13,23 @@ import gleam/string
 
 pub type Spec(state) {
   Spec(
-    // the id of the canvas element to render to
+    /// the id of the canvas element to render to
     id: String,
-    // the canvas width
+    /// the canvas width
     width: Float,
-    // the canvas height
+    /// the canvas height
     height: Float,
-    // enables canvas image smoothing
-    // this should typically be False for pixel art
-    // https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Using_images#controlling_image_scaling_behavior
+    /// enables canvas image smoothing
+    /// this should typically be False for pixel art
+    /// https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Using_images#controlling_image_scaling_behavior
     smooth: Bool,
-    // enables debugging features
+    /// enables debugging features
     debug: Bool,
-    // creates the games first state
+    /// creates the games first state
     init: fn() -> state,
-    // things to render onto the canvas
+    /// things to render onto the canvas
     view: fn(state) -> Draws,
-    // the core game logic update loop
+    /// the core game logic update loop
     update: fn(state, Input) -> state,
   )
 }
@@ -582,18 +582,19 @@ fn assert_drawable() -> Drawable
 /// output from the 'Tiled' program .json export format
 pub type Tiled {
   Tiled(
-    compressionlevel: Int,
+    compression_level: Int,
     height: Int,
     infinite: Bool,
     layers: List(Layer),
-    nextlayerid: Int,
-    nextobjectid: Int,
+    next_layer_id: Int,
+    next_object_id: Int,
     orientation: String,
-    renderorder: String,
-    tiledversion: String,
-    tileheight: Int,
-    tilesets: List(TileSet),
-    tilewidth: Int,
+    render_order: String,
+    tiled_version: String,
+    tile_height: Int,
+    tile_sets: List(TileSet),
+    tile_width: Int,
+    type_: String,
     version: String,
     width: Int,
   )
@@ -614,25 +615,96 @@ pub type Layer {
 }
 
 pub type TileSet {
-  TileSet(firstgrid: Int, source: String)
+  TileSet(firstgid: Int, source: String)
 }
 
 @external(javascript, "./canvas.mjs", "tiled")
 fn tiled(src: String) -> dynamic.Dynamic
 
-pub fn load_tiled(src: String) -> List(List(Int)) {
-  let data = tiled(src)
-  let ints: Result(List(List(Int)), List(dynamic.DecodeError)) = {
-    use layers <- result.try(
-      data |> dynamic.field("layers", dynamic.dynamic |> dynamic.list),
-    )
+/// loads a Tiled .json file from a url
+pub fn load_tiled(src: String) -> Result(Tiled, List(dynamic.DecodeError)) {
+  src |> tiled |> decode_tiled
+}
 
-    layers
-    |> list.map(fn(layer) {
-      layer |> dynamic.field("data", dynamic.int |> dynamic.list)
-    })
-    |> result.all
-  }
-  let assert Ok(i) = ints
-  i
+fn decode_tiled(
+  data: dynamic.Dynamic,
+) -> Result(Tiled, List(dynamic.DecodeError)) {
+  use compressionlevel <- result.try(
+    data |> dynamic.field("compressionlevel", dynamic.int),
+  )
+  use height <- result.try(data |> dynamic.field("height", dynamic.int))
+  use infinite <- result.try(data |> dynamic.field("infinite", dynamic.bool))
+  use layers <- result.try(
+    data |> dynamic.field("layers", decode_layer |> dynamic.list),
+  )
+  use nextlayerid <- result.try(
+    data |> dynamic.field("nextlayerid", dynamic.int),
+  )
+  use nextobjectid <- result.try(
+    data |> dynamic.field("nextobjectid", dynamic.int),
+  )
+  use orientation <- result.try(
+    data |> dynamic.field("orientation", dynamic.string),
+  )
+  use renderorder <- result.try(
+    data |> dynamic.field("renderorder", dynamic.string),
+  )
+  use tiledversion <- result.try(
+    data |> dynamic.field("tiledversion", dynamic.string),
+  )
+  use tileheight <- result.try(data |> dynamic.field("tileheight", dynamic.int))
+  use tilesets <- result.try(
+    data |> dynamic.field("tilesets", decode_tile_set |> dynamic.list),
+  )
+  use tilewidth <- result.try(data |> dynamic.field("tilewidth", dynamic.int))
+  use type_ <- result.try(data |> dynamic.field("type", dynamic.string))
+  use version <- result.try(data |> dynamic.field("version", dynamic.string))
+  use width <- result.try(data |> dynamic.field("width", dynamic.int))
+  Tiled(
+    compressionlevel,
+    height,
+    infinite,
+    layers,
+    nextlayerid,
+    nextobjectid,
+    orientation,
+    renderorder,
+    tiledversion,
+    tileheight,
+    tilesets,
+    tilewidth,
+    type_,
+    version,
+    width,
+  )
+  |> Ok
+}
+
+fn decode_layer(
+  data: dynamic.Dynamic,
+) -> Result(Layer, List(dynamic.DecodeError)) {
+  data
+  |> dynamic.decode9(
+    Layer,
+    dynamic.field("data", dynamic.int |> dynamic.list),
+    dynamic.field("height", dynamic.int),
+    dynamic.field("id", dynamic.int),
+    dynamic.field("name", dynamic.string),
+    dynamic.field("opacity", dynamic.int),
+    dynamic.field("visible", dynamic.bool),
+    dynamic.field("width", dynamic.int),
+    dynamic.field("x", dynamic.int),
+    dynamic.field("y", dynamic.int),
+  )
+}
+
+fn decode_tile_set(
+  data: dynamic.Dynamic,
+) -> Result(TileSet, List(dynamic.DecodeError)) {
+  data
+  |> dynamic.decode2(
+    TileSet,
+    dynamic.field("firstgid", dynamic.int),
+    dynamic.field("source", dynamic.string),
+  )
 }
