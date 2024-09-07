@@ -14,11 +14,12 @@ export function window_resize(fn) {
   window.addEventListener('resize', fn, 250);
 }
 
-export function init_canvas(id, w, h, s) {
+export function init_canvas(id, w, h, s, smooth) {
   const canvas = document.getElementById(id);
   const ctx = canvas.getContext("2d");
   canvas.width = w * s
   canvas.height = h * s
+  ctx.imageSmoothingEnabled = smooth;
   return [canvas, ctx]
 }
 
@@ -182,3 +183,23 @@ export function img_pro(ctx, x, y, w, h, image, dx, dy, dw, dh) {
 }
 
 export function assert_drawable() {}
+
+
+//
+// TILED
+//
+
+// TODO; async-ify this?
+// TODO: hot-reload maybe as well?
+export function tiled(src) {
+  loading++;
+  var req = new XMLHttpRequest();
+  req.open("GET", src, false);
+  req.send(null);
+  if (req.status === 200) {
+    loading--;
+    return JSON.parse(req.responseText);
+  } else {
+    loading = -1;
+  };
+}

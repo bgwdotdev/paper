@@ -1,27 +1,35 @@
 import gleam/dict
+import gleam/dynamic
 import gleam/float
 import gleam/int
 import gleam/io
+
+//import gleam/json
 import gleam/list
 import gleam/option.{type Option, None}
+import gleam/result
 import gleam/set
 import gleam/string
 
 pub type Spec(state) {
   Spec(
-    // The id of the canvas element to render to
+    // the id of the canvas element to render to
     id: String,
-    // The canvas width
+    // the canvas width
     width: Float,
-    // The canvas height
+    // the canvas height
     height: Float,
-    // Enables debugging features
+    // enables canvas image smoothing
+    // this should typically be False for pixel art
+    // https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Using_images#controlling_image_scaling_behavior
+    smooth: Bool,
+    // enables debugging features
     debug: Bool,
-    // Creates the games first state
+    // creates the games first state
     init: fn() -> state,
-    // Things to render onto the canvas
+    // things to render onto the canvas
     view: fn(state) -> Draws,
-    // The core game logic update loop
+    // the core game logic update loop
     update: fn(state, Input) -> state,
   )
 }
@@ -31,7 +39,8 @@ pub fn start(spec: Spec(state)) -> Nil {
   let w = vw /. spec.width |> float.floor
   let h = vh /. spec.height |> float.floor
   let scale = float.min(w, h)
-  let #(_canvas, ctx) = init_canvas(spec.id, spec.width, spec.height, scale)
+  let #(_canvas, ctx) =
+    init_canvas(spec.id, spec.width, spec.height, scale, spec.smooth)
   scale_canvas(ctx, scale, scale)
 
   init_resize(ctx, spec.width, spec.height) |> window_resize
@@ -197,7 +206,13 @@ fn window_scale(cw: Float, ch: Float) -> Float {
 }
 
 @external(javascript, "./canvas.mjs", "init_canvas")
-fn init_canvas(id: String, w: Float, h: Float, s: Float) -> #(Canvas, Context)
+fn init_canvas(
+  id: String,
+  w: Float,
+  h: Float,
+  s: Float,
+  smooth: Bool,
+) -> #(Canvas, Context)
 
 @external(javascript, "./canvas.mjs", "create_canvas")
 fn create_canvas(w: Float, h: Float) -> Context
@@ -488,6 +503,8 @@ pub fn load_tilemap(src: String, tw: Float, th: Float) -> TileMap {
 
 /// draw a tilemap using a list of numbers which corrispond to the index of
 /// each tile
+///
+/// this is based 1 tile index, as 0 skips drawing a tile
 pub fn draw_map(map: TileMap, game_width: Float, layout: List(Float)) -> Draw {
   fn(ctx: Context) {
     let rl = map.image.width /. map.tile_width
@@ -495,39 +512,47 @@ pub fn draw_map(map: TileMap, game_width: Float, layout: List(Float)) -> Draw {
 
     layout
     |> list.index_map(fn(l, i) {
-      // source
-      let y = l /. rl |> float.floor |> float.multiply(map.tile_width)
-      let x =
-        case l {
-          x if x >. rl -> float.round(l) % float.round(rl)
-          x -> float.round(x)
-        }
-        |> int.to_float
-        |> float.multiply(map.tile_width)
+      case l {
+        0.0 -> assert_drawable()
+        _ -> {
+          let l = l -. 1.0
+          // source
+          let y = l /. rl |> float.floor |> float.multiply(map.tile_width)
+          let x =
+            case l {
+              x if x >=. rl -> float.round(l) % float.round(rl)
+              x -> float.round(x)
+            }
+            |> int.to_float
+            |> float.multiply(map.tile_width)
 
-      // destination
-      let dy =
-        int.to_float(i) /. drl |> float.floor |> float.multiply(map.tile_height)
-      let dx =
-        case int.to_float(i) {
-          x if x >=. drl -> float.round(x) % float.round(drl)
-          x -> float.round(x)
-        }
-        |> int.to_float
-        |> float.multiply(map.tile_width)
+          // destination
+          let dy =
+            int.to_float(i) /. drl
+            |> float.floor
+            |> float.multiply(map.tile_height)
+          let dx =
+            case int.to_float(i) {
+              x if x >=. drl -> float.round(x) % float.round(drl)
+              x -> float.round(x)
+            }
+            |> int.to_float
+            |> float.multiply(map.tile_width)
 
-      img_pro(
-        ctx,
-        x,
-        y,
-        map.tile_width,
-        map.tile_height,
-        map.image,
-        dx,
-        dy,
-        map.tile_width,
-        map.tile_height,
-      )
+          img_pro(
+            ctx,
+            x,
+            y,
+            map.tile_width,
+            map.tile_height,
+            map.image,
+            dx,
+            dy,
+            map.tile_width,
+            map.tile_height,
+          )
+        }
+      }
     })
     assert_drawable()
   }
@@ -549,3 +574,65 @@ fn img_pro(
 
 @external(javascript, "./canvas.mjs", "assert_drawable")
 fn assert_drawable() -> Drawable
+
+//
+// TILED
+//
+
+/// output from the 'Tiled' program .json export format
+pub type Tiled {
+  Tiled(
+    compressionlevel: Int,
+    height: Int,
+    infinite: Bool,
+    layers: List(Layer),
+    nextlayerid: Int,
+    nextobjectid: Int,
+    orientation: String,
+    renderorder: String,
+    tiledversion: String,
+    tileheight: Int,
+    tilesets: List(TileSet),
+    tilewidth: Int,
+    version: String,
+    width: Int,
+  )
+}
+
+pub type Layer {
+  Layer(
+    data: List(Int),
+    height: Int,
+    id: Int,
+    name: String,
+    opacity: Int,
+    visible: Bool,
+    width: Int,
+    x: Int,
+    y: Int,
+  )
+}
+
+pub type TileSet {
+  TileSet(firstgrid: Int, source: String)
+}
+
+@external(javascript, "./canvas.mjs", "tiled")
+fn tiled(src: String) -> dynamic.Dynamic
+
+pub fn load_tiled(src: String) -> List(List(Int)) {
+  let data = tiled(src)
+  let ints: Result(List(List(Int)), List(dynamic.DecodeError)) = {
+    use layers <- result.try(
+      data |> dynamic.field("layers", dynamic.dynamic |> dynamic.list),
+    )
+
+    layers
+    |> list.map(fn(layer) {
+      layer |> dynamic.field("data", dynamic.int |> dynamic.list)
+    })
+    |> result.all
+  }
+  let assert Ok(i) = ints
+  i
+}

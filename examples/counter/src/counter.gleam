@@ -6,7 +6,8 @@ const width = 64.0
 const height = 64.0
 
 pub fn main() {
-  paper.Spec("canvas", width, height, False, init, view, update) |> paper.start
+  paper.Spec("canvas", width, height, False, False, init, view, update)
+  |> paper.start
 }
 
 pub type State {
