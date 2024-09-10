@@ -21,6 +21,7 @@ pub type Spec(state) {
     height: Float,
     /// enables canvas image smoothing
     /// this should typically be False for pixel art
+    ///
     /// https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Using_images#controlling_image_scaling_behavior
     smooth: Bool,
     /// enables debugging features
@@ -383,6 +384,10 @@ pub fn is_clicked(input: Input, button: String) -> Option(Vec2) {
     False, True -> pos
     _, _ -> None
   }
+}
+
+pub fn pointer(input: Input) -> Vec2 {
+  dict.get(input.mouse, "CURSOR") |> result.unwrap(Vec2(0.0, 0.0))
 }
 
 //
