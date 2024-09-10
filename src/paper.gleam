@@ -639,7 +639,9 @@ pub fn load_tiled(src: String) -> Result(Tiled, List(dynamic.DecodeError)) {
 /// ensure your canvas size matches
 pub fn draw_tiled(tilemap: TileMap, tiled: Tiled) -> Draws {
   let w = tiled.width * tiled.tile_width |> int.to_float
-  list.map(tiled.layers, fn(layer) {
+  tiled.layers
+  |> list.filter(fn(layer) { layer.visible })
+  |> list.map(fn(layer) {
     layer.data
     |> list.map(int.to_float)
     |> draw_map(tilemap, w, _)
