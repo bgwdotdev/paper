@@ -648,6 +648,35 @@ pub fn draw_tiled(tilemap: TileMap, tiled: Tiled) -> Draws {
   })
 }
 
+pub fn draw_sprite(tilemap: TileMap, id: Int, rec: Rect) -> Draw {
+  fn(ctx) {
+    let rl = tilemap.image.width /. tilemap.tile_width
+    let l = id |> int.to_float
+    // copy paste
+    let y = l /. rl |> float.floor |> float.multiply(tilemap.tile_width)
+    let x =
+      case l {
+        x if x >=. rl -> float.round(l) % float.round(rl)
+        x -> float.round(x)
+      }
+      |> int.to_float
+      |> float.multiply(tilemap.tile_width)
+
+    img_pro(
+      ctx,
+      x,
+      y,
+      tilemap.tile_width,
+      tilemap.tile_height,
+      tilemap.image,
+      rec.x,
+      rec.y,
+      rec.width,
+      rec.height,
+    )
+  }
+}
+
 fn decode_tiled(
   data: dynamic.Dynamic,
 ) -> Result(Tiled, List(dynamic.DecodeError)) {
