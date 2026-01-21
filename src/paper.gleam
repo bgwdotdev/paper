@@ -452,6 +452,28 @@ pub fn draw_text_center(x: Float, y: Float, str: String, color: String) -> Draw 
   }
 }
 
+pub fn draw_text_stroke(
+  x: Float,
+  y: Float,
+  str: String,
+  fill: String,
+  stroke: String,
+) -> Draw {
+  fn(ctx) {
+    text(ctx, x, y, str, fill)
+    text_stroke(ctx, x, y, str, stroke)
+  }
+}
+
+@external(javascript, "./canvas.mjs", "text_stroke")
+fn text_stroke(
+  ctx: Context,
+  x: Float,
+  y: Float,
+  str: String,
+  stroke: String,
+) -> Drawable
+
 @external(javascript, "./canvas.mjs", "text")
 fn text(
   ctx: Context,
@@ -648,6 +670,7 @@ pub fn draw_tiled(tilemap: TileMap, tiled: Tiled) -> Draws {
   })
 }
 
+/// draw a sprite/tile from a TileMap based on the id
 pub fn draw_sprite(tilemap: TileMap, id: Int, rec: Rect) -> Draw {
   fn(ctx) {
     let rl = tilemap.image.width /. tilemap.tile_width
@@ -675,6 +698,24 @@ pub fn draw_sprite(tilemap: TileMap, id: Int, rec: Rect) -> Draw {
       rec.height,
     )
   }
+}
+
+type SpriteAnimation {
+  SpriteAnimation(frames: List(Int), fps: Float, loop: Bool)
+}
+
+fn animate_sprite(tilemap: TileMap, ani: SpriteAnimation, rec: Rect) {
+  let curr_time = 0
+  let start_time = 0
+  let time_since = curr_time - start_time
+  let frame_len_ms = 1000.0 /. ani.fps
+  let curr_frame =
+    { time_since % 1000 |> int.to_float } /. frame_len_ms
+    |> float.floor
+    |> float.round
+  // what do we need to know???
+  //let id = time % ani.fps
+  draw_sprite(tilemap, curr_frame, rec)
 }
 
 fn decode_tiled(
@@ -759,3 +800,53 @@ fn decode_tile_set(
     dynamic.field("source", dynamic.string),
   )
 }
+
+//
+// ANIMATION
+//
+
+/// rotates draws clockwise in radians
+pub fn xrotate(angle: Float) -> Draw {
+  fn(ctx) { rotate(ctx, angle) }
+}
+
+//pub fn xrotate(angle: Float, func: fn() -> Draw) -> Draw {
+//  fn(ctx) {
+//    xsave(ctx)
+//    rotate(ctx, angle)
+//    func()
+//    xrestore(ctx)
+//    //xreset(ctx)
+//  }
+//}
+
+@external(javascript, "./canvas.mjs", "rotate")
+fn rotate(ctx: Context, angle: Float) -> Drawable
+
+/// translates draws by an x,y offset
+pub fn xtranslate(vec: Vec2) -> Draw {
+  fn(ctx) { translate(ctx, vec.x, vec.y) }
+}
+
+@external(javascript, "./canvas.mjs", "translate")
+fn translate(ctx: Context, x: Float, y: Float) -> Drawable
+
+// TODO: probably need to save/load this under the hood to avoid resetting the
+// automatic canvas scaling we do for resizing the screen
+/// resets all previous x calls
+@external(javascript, "./canvas.mjs", "reset_transform")
+fn xreset(ctx: Context) -> Drawable
+
+pub fn xsave() -> Draw {
+  fn(ctx) { save(ctx) }
+}
+
+@external(javascript, "./canvas.mjs", "save")
+fn save(ctx: Context) -> Drawable
+
+pub fn xrestore() -> Draw {
+  fn(ctx) { restore(ctx) }
+}
+
+@external(javascript, "./canvas.mjs", "restore")
+fn restore(ctx: Context) -> Drawable

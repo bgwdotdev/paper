@@ -130,6 +130,11 @@ export function text(ctx, x, y, text, color) {
   ctx.fillText(text, x, y);
 }
 
+export function text_stroke(ctx, x, y, text, color) {
+  ctx.strokeStyle = color;
+  ctx.strokeText(text, x, y);
+}
+
 export function measure_text(ctx, text) {
   return ctx.measureText(text).width;
 }
@@ -202,4 +207,33 @@ export function tiled(src) {
   } else {
     loading = -1;
   };
+}
+
+
+//
+// ANIMATION
+//
+
+export function rotate(ctx, angle) {
+  ctx.rotate(angle);
+}
+
+export function translate(ctx, x, y) {
+  ctx.translate(x, y);
+}
+
+export function reset(ctx) {
+  ctx.reset();
+}
+
+export function save(ctx) {
+  ctx.save();
+}
+
+export function restore(ctx) {
+  ctx.restore();
+}
+
+export function reset_transform(ctx) {
+  ctx.resetTransform();
 }
