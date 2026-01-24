@@ -534,34 +534,38 @@ pub fn load_tilemap(src: String, tw: Float, th: Float) -> TileMap {
 /// this is based 1 tile index, as 0 skips drawing a tile
 pub fn draw_map(map: TileMap, game_width: Float, layout: List(Float)) -> Draw {
   fn(ctx: Context) {
-    let rl = map.image.width /. map.tile_width
-    let drl = game_width /. map.tile_width
+    let row_len = map.image.width /. map.tile_width
+    let destination_row_len = game_width /. map.tile_width
 
     layout
-    |> list.index_map(fn(l, i) {
-      case l {
+    |> list.index_map(fn(tile, idx) {
+      case tile {
         0.0 -> assert_drawable()
         _ -> {
-          let l = l -. 1.0
+          // TILE ID
+          let tile = tile -. 1.0
           // source
-          let y = l /. rl |> float.floor |> float.multiply(map.tile_width)
+          let y =
+            tile /. row_len |> float.floor |> float.multiply(map.tile_width)
           let x =
-            case l {
-              x if x >=. rl -> float.round(l) % float.round(rl)
-              x -> float.round(x)
+            case tile {
+              tile if tile >=. row_len ->
+                float.round(tile) % float.round(row_len)
+              tile -> float.round(tile)
             }
             |> int.to_float
             |> float.multiply(map.tile_width)
 
           // destination
           let dy =
-            int.to_float(i) /. drl
+            int.to_float(idx) /. destination_row_len
             |> float.floor
             |> float.multiply(map.tile_height)
           let dx =
-            case int.to_float(i) {
-              x if x >=. drl -> float.round(x) % float.round(drl)
-              x -> float.round(x)
+            case int.to_float(idx) {
+              dx if dx >=. destination_row_len ->
+                float.round(dx) % float.round(destination_row_len)
+              dx -> float.round(dx)
             }
             |> int.to_float
             |> float.multiply(map.tile_width)
