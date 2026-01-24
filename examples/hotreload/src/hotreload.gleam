@@ -1,7 +1,7 @@
 import hotreload/app
 import paper
 
-pub fn main(update) {
+pub fn main(update, view) {
   paper.Spec(
     "canvas",
     app.width,
@@ -9,7 +9,7 @@ pub fn main(update) {
     False,
     False,
     app.init,
-    app.view,
+    view,
     update,
   )
   |> paper.start

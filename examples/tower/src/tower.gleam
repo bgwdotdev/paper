@@ -24,7 +24,12 @@ pub fn main() {
   |> paper.start
 }
 
-type State {
+pub fn hot(update) -> Nil {
+  paper.Spec("canvas", width, height, False, False, init, view, update)
+  |> paper.start
+}
+
+pub opaque type State {
   State(
     // system
     width: Float,
@@ -132,8 +137,14 @@ fn init() -> State {
   )
 }
 
-fn update(state: State, input: paper.Input) -> State {
+pub fn update(state: State, input: paper.Input) -> State {
   let state = State(..state, counter: state.counter + 1)
+  let state = {
+    bool.guard(!paper.is_pressed(input, "o"), state, fn() {
+      state.towers |> echo
+      state
+    })
+  }
   // reload map
   let state = {
     bool.guard(!paper.is_pressed(input, "r"), state, fn() {
@@ -144,7 +155,7 @@ fn update(state: State, input: paper.Input) -> State {
   // cursor grid
   let state = {
     let p = paper.pointer(input)
-    let x = p.x /. 16.0 |> float.floor |> float.multiply(16.0)
+    let x = p.x /. 8.0 |> float.floor |> float.multiply(16.0)
     let y = p.y /. 16.0 |> float.floor |> float.multiply(16.0)
     State(..state, pointer: paper.Vec2(x, y))
   }

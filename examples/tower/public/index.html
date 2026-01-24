@@ -15,7 +15,21 @@
 <body>
     <canvas id="canvas"></canvas>
     <script type="module">
-      import { main } from './tower.js';
-      main()
+      let tower = await import(`./tower.js?t=${Date.now()}`);
+      async function hotPatch() {
+        console.log("reloading!");
+        const module = await import(`./up.js?t=${Date.now()}`);
+        game.update = module.update;
+      }
+      const game = {
+        update: tower.update
+      }
+      const hotupdate = (state, input) => {
+        return game.update(state, input)
+      }
+      tower.hot(hotupdate)
+      window.addEventListener('keydown', (e) => {
+        if (e.key === ';') { hotPatch(); }
+      });
     </script>
 </body>

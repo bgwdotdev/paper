@@ -12,14 +12,3 @@ pub type State {
 pub fn init() -> State {
   State(0)
 }
-
-pub fn view(state: State) -> paper.Draws {
-  [
-    paper.draw_text_center(
-      width *. 0.5,
-      height *. 0.5,
-      int.to_string(state.count),
-      "#ffaff3",
-    ),
-  ]
-}

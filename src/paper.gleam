@@ -144,7 +144,7 @@ fn loop(state: state, ctx: Context, spec: Spec(state), engine: Engine) -> Nil {
         False -> Nil
       }
       // loop
-      io.debug(get_mouse())
+      //io.debug(get_mouse())
       fn() { loop(state, ctx, spec, engine) } |> draw_canvas
     }
   }

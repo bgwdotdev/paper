@@ -5,6 +5,10 @@ debug:
 	bun build ./build/dev/javascript/$(proj)/$(proj).mjs --target browser --outdir public
 	bun run ./serve.js
 
+full:
+	gleam build
+	bun build ./build/dev/javascript/$(proj)/$(proj).mjs --target browser --outdir public
+
 build:
 	gleam build
 	bun build ./build/dev/javascript/$(proj)/$(proj).mjs --minify --target browser --outdir public

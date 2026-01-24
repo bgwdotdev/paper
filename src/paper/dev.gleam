@@ -114,16 +114,21 @@ const index = "<!DOCTYPE html>
       const hotreload = await import(`./build/dev/javascript/<MODULE>/<MODULE>.mjs`);
       const update = await import(`./build/dev/javascript/<MODULE>/<MODULE>/update.mjs?t=${Date.now()}`);
       const game = {
-        update: update.update
+        update: update.update,
+        view: update.view
       }
       const hotupdate = (state, input) => {
         return game.update(state, input)
       }
-      hotreload.main(hotupdate)
+      const hotview = (state) => {
+        return game.view(state)
+      }
+      hotreload.main(hotupdate, hotview)
 
       async function hotPatch() {
         const update = await import(`./build/dev/javascript/<MODULE>/<MODULE>/update.mjs?t=${Date.now()}`);
         game.update = update.update;
+        game.view = update.view;
       }
       const socket = new WebSocket('ws://localhost:8000/ws');
       socket.addEventListener('message', event => {
