@@ -115,6 +115,7 @@ fn loop(state: state, ctx: Context, spec: Spec(state), engine: Engine) -> Nil {
       // error
       clear_canvas(ctx)
       ["failed to load: \n", ..errors]
+      |> echo
       |> string.join("\n")
       |> text(ctx, 10.0, 10.0, _, "white")
       fn() { loop(state, ctx, spec, engine) } |> draw_canvas
