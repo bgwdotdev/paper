@@ -30,8 +30,7 @@
         const update = await import(`./build/dev/javascript/hotreload/hotreload/update.mjs?t=${Date.now()}`);
         game.update = update.update;
       }
-      window.addEventListener('keydown', (e) => {
-        if (e.key === ';') { hotPatch(); }
-      });
+      const socket = new WebSocket("ws://localhost:8000/ws");
+      socket.addEventListener("message", event => { hotPatch(); });
     </script>
 </body>
