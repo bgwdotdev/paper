@@ -16,6 +16,7 @@ pub fn update(state: app.State, input: paper.Input) -> app.State {
 
 fn inc(i: Int) -> Int {
   i + 1
+  // hey! try change me and see the logic automatically reload!
 }
 
 fn dec(i: Int) -> Int {

@@ -63,3 +63,17 @@ as well as building and bundling (in `Makefile`).
 gleam run   # Run the project
 gleam test  # Run the tests
 ```
+
+## Hot Reloading
+
+note: requires using `bun`
+
+paper has a build in hot reloading dev server for development purposes.
+
+This requires that you split your update function out from your state into it's own `src/myapp/update.gleam` file.
+
+Your `main` function in your `src/myapp.gleam` should also take in an update function.
+
+Then run `gleam run -m paper/dev` to start the web server and navigate to [http://localhost:8000](http://localhost:8000) and now any time you update your source code, update will be automatically reloaded.
+
+See `hotreload` in the examples folder for reference.

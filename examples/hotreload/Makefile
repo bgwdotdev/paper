@@ -2,11 +2,7 @@ proj = hotreload
 
 debug:
 	gleam build
-	bun build ./build/dev/javascript/$(proj)/$(proj).mjs --target browser --outdir public
-	bun run ./serve.js
-
-watch:
-	inotifywait -q -m -e close_write -r ./src | while read events; do gleam build; done
+	gleam run -m paper/dev
 
 build:
 	gleam build
