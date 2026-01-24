@@ -1,0 +1,34 @@
+{ "compressionlevel":-1,
+ "height":3,
+ "infinite":false,
+ "layers":[
+        {
+         "data":[7, 3, 7,
+            19, 21, 19,
+            31, 33, 31],
+         "height":3,
+         "id":1,
+         "name":"bg",
+         "opacity":1,
+         "type":"tilelayer",
+         "visible":true,
+         "width":3,
+         "x":0,
+         "y":0
+        }],
+ "nextlayerid":7,
+ "nextobjectid":10,
+ "orientation":"orthogonal",
+ "renderorder":"left-down",
+ "tiledversion":"1.11.2",
+ "tileheight":16,
+ "tilesets":[
+        {
+         "firstgid":1,
+         "source":"..\/..\/kenny-tiny-dungeon\/Tiled\/sampleSheet.tsx"
+        }],
+ "tilewidth":16,
+ "type":"map",
+ "version":"1.10",
+ "width":3
+}
