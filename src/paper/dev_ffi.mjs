@@ -47,5 +47,6 @@ export function watcher(path, fun) {
 }
 
 export function build() {
-  return Bun.spawnSync(["gleam", "build"]);
+  const {exitCode} = Bun.spawnSync(["gleam", "build"])
+  return exitCode ? new Error(undefined) : new Ok(undefined) ;
 }

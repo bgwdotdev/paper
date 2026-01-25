@@ -34,6 +34,7 @@ pub fn main() {
   io.println(banner)
   io.println("listening on: http://localhost:8000")
   io.println("warning: this server is not safe for use in production")
+  build()
   Nil
 }
 
@@ -45,7 +46,18 @@ type FSWatcher
 fn watcher(path: String, fun: fn(WatchEventType, String) -> Nil) -> FSWatcher
 
 @external(javascript, "./dev_ffi", "build")
-fn build() -> Int
+fn build_ffi() -> Result(Nil, Nil)
+
+fn build() -> Nil {
+  case build_ffi() {
+    Ok(Nil) ->
+      "\u{001b}[2K\u{001b}[1Gcompiled: [ \u{001b}[32m●\u{001b}[0m ]"
+      |> io.print
+    Error(Nil) ->
+      "\u{001b}[2K\u{001b}[1Gcompiled: [ \u{001b}[31m●\u{001b}[0m ]"
+      |> io.print
+  }
+}
 
 type Request
 
