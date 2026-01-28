@@ -6,3 +6,4 @@ erl_crash.dump
 /examples/*/build
 /examples/*/*.zip
 /examples/*/public
+/ignore
