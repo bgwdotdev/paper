@@ -117,6 +117,9 @@ const index = "<!DOCTYPE html>
     justify-content: center;
     align-content: center;
   }
+  #canvas {
+    <!--cursor: none; -->
+  }
 </style>
 </head>
 <body>
