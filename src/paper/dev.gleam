@@ -119,6 +119,7 @@ const index = "<!DOCTYPE html>
   }
   #canvas {
     <!--cursor: none; -->
+    pointer-events: none;
   }
 </style>
 </head>

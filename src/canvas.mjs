@@ -16,6 +16,10 @@ export function window_resize(fn) {
 
 export function init_canvas(id, w, h, s, smooth) {
   const canvas = document.getElementById(id);
+  canvas.oncontextmenu = function (e) {
+    e.preventDefault(); 
+    e.stopPropagation();
+  }
   const ctx = canvas.getContext("2d");
   canvas.width = w * s
   canvas.height = h * s
@@ -154,6 +158,7 @@ export function asset_failed() {
   return failed;
 }
 
+// TODO: convert to promise
 export function image(src) {
   loading++;
   const img = new Image();
@@ -166,6 +171,7 @@ export function image(src) {
   return img
 }
 
+// TODO: convert to promise
 export function audio(src) {
   loading++;
   const aud = new Audio();
@@ -194,7 +200,7 @@ export function assert_drawable() {}
 // TILED
 //
 
-// TODO; async-ify this?
+// TODO: convert to promise
 // TODO: hot-reload maybe as well?
 export function tiled(src) {
   loading++;

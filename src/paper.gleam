@@ -815,16 +815,6 @@ pub fn xrotate(angle: Float) -> Draw {
   fn(ctx) { rotate(ctx, angle) }
 }
 
-//pub fn xrotate(angle: Float, func: fn() -> Draw) -> Draw {
-//  fn(ctx) {
-//    xsave(ctx)
-//    rotate(ctx, angle)
-//    func()
-//    xrestore(ctx)
-//    //xreset(ctx)
-//  }
-//}
-
 @external(javascript, "./canvas.mjs", "rotate")
 fn rotate(ctx: Context, angle: Float) -> Drawable
 
