@@ -855,3 +855,25 @@ pub fn xrestore() -> Draw {
 
 @external(javascript, "./canvas.mjs", "restore")
 fn restore(ctx: Context) -> Drawable
+
+//
+// CAMERA
+//
+
+pub fn camera_follow(
+  width: Float,
+  height: Float,
+  zoom: Float,
+  target: Rect,
+  draws: Draws,
+) {
+  let visible_width = width /. { 2.0 *. zoom }
+  let visible_height = height /. { 2.0 *. zoom }
+  let half_target_width = target.width /. 2.0
+  let half_target_height = target.height /. 2.0
+  let camera_x = target.x +. half_target_width -. visible_width
+  let camera_y = target.y +. half_target_height -. visible_height
+  let cam = Vec2(x: float.negate(camera_x), y: float.negate(camera_y))
+  [[xsave(), scale(zoom, zoom), xtranslate(cam)], draws, [xrestore()]]
+  |> list.flatten
+}
