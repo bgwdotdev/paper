@@ -54,6 +54,7 @@ fn init() -> State {
     tiles:,
     map:,
     pointer: paper.Vec2(0.0, 0.0),
+    is_valid_path: False,
     tower_map:,
     towers: [],
     path:,

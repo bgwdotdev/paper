@@ -72,21 +72,22 @@ fn update_build(state: State, input: paper.Input) -> State {
     })
   // spawn tower
   // TODO: rewrite this
-  case paper.is_clicked(input, "LMB") {
+  let cursor_idx = vec_to_idx(state.pointer, state.width, 16.0)
+  let is_valid_path =
+    state.tower_map
+    |> list.drop(cursor_idx)
+    |> list.first
+    |> fn(m) {
+      case m {
+        Ok(0.0) -> False
+        Error(_) -> False
+        Ok(_) -> True
+      }
+    }
+  let state = State(..state, is_valid_path:)
+  let state = case paper.is_clicked(input, "LMB") {
     None -> state
     Some(_) -> {
-      let cursor_idx = vec_to_idx(state.pointer, state.width, 16.0)
-      let is_valid_path =
-        state.tower_map
-        |> list.drop(cursor_idx)
-        |> list.first
-        |> fn(m) {
-          case m {
-            Ok(0.0) -> False
-            Error(_) -> False
-            Ok(_) -> True
-          }
-        }
       let is_empty_square =
         state.towers
         |> list.filter(fn(tower) { tower.pos == state.pointer })
@@ -109,6 +110,7 @@ fn update_build(state: State, input: paper.Input) -> State {
       }
     }
   }
+  state
 }
 
 fn update_round(state: State, input: paper.Input) -> State {
@@ -256,7 +258,7 @@ pub fn view(state: State) -> paper.Draws {
     [
       paper.draw_sprite(
         state.tiles,
-        60,
+        cursor(state.is_valid_path),
         paper.Rect(state.pointer.x, state.pointer.y, 16.0, 16.0),
       ),
       paper.draw_text(
@@ -301,6 +303,13 @@ pub fn view(state: State) -> paper.Draws {
 //
 // HELPERS
 //
+
+fn cursor(is_valid_path: Bool) -> Int {
+  case is_valid_path {
+    True -> 60
+    False -> 61
+  }
+}
 
 fn sprite_id(sprite: state.Sprite) -> Int {
   case sprite {

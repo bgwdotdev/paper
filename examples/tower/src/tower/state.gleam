@@ -24,6 +24,7 @@ pub type State {
     map: paper.Tiled,
     // system
     pointer: paper.Vec2,
+    is_valid_path: Bool,
     // unit
     tower_map: List(Float),
     towers: List(Tower),
